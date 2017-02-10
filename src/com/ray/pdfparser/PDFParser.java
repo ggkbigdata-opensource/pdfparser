@@ -16,7 +16,9 @@ public class PDFParser {
 	public static void main(String[] args) throws IOException {
 
 		long startTime = System.currentTimeMillis();
-		File pdfFile = new File("/Users/wanglei/Downloads/检测报告样本_client_import.pdf");
+		File pdfFile = new File("D:/report_temp/report_origin.pdf");
+		//File pdfFile = new File("D:/report_temp/report1.pdf");
+		//File pdfFile = new File("/Users/wanglei/Downloads/检测报告样本_client_import.pdf");
 		PDFParser p = new PDFParser();
 		PDFParserResult r = p.parse(pdfFile);
 		System.out.println("Final Result:"+r);
