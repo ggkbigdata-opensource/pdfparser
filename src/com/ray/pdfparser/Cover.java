@@ -10,6 +10,7 @@ public class Cover {
 	private String contactTel = null;
 	private String contactFax = null;
 	private String contactPostcode = null;
+	private String message = null;
 	public String getReportNum() {
 		return reportNum;
 	}
@@ -77,4 +78,10 @@ public class Cover {
 		s.append("contactPostcode: '"+this.contactPostcode+"'}");
 		return s.toString();
 	}
+    public String getMessage() {
+        return message;
+    }
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }

@@ -16,7 +16,7 @@ public class PDFParser {
 	public static void main(String[] args) throws IOException {
 
 		long startTime = System.currentTimeMillis();
-		File pdfFile = new File("D:/report_temp/report_origin.pdf");
+		File pdfFile = new File("D:/temp/report_temp/report1.pdf");
 		//File pdfFile = new File("D:/report_temp/report1.pdf");
 		//File pdfFile = new File("/Users/wanglei/Downloads/检测报告样本_client_import.pdf");
 		PDFParser p = new PDFParser();
@@ -50,7 +50,7 @@ public class PDFParser {
     	int lastPage = pdfDocument.getNumberOfPages();
     	System.out.println("Last page="+lastPage);
     	PDFTextStripper stripper=new PDFTextStripper();
-        stripper.setSortByPosition(false);
+        stripper.setSortByPosition(true);
         stripper.setStartPage(1);
         stripper.setEndPage(lastPage);
         String allText = stripper.getText(pdfDocument);
@@ -60,7 +60,13 @@ public class PDFParser {
 	        String end = "建筑消防设施检测报告";
 	        eIndex = allText.indexOf(end);
 	        String paragraph = allText.substring(0, eIndex);
-	        Cover cover = this.processOnCover(paragraph);
+	        Cover cover = null;
+            try {
+                cover = this.processOnCover(paragraph);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 	        returnObj.setCover(cover);
         	
         }
@@ -70,7 +76,13 @@ public class PDFParser {
 	        sIndex = allText.indexOf(start)+start.length();
 	        eIndex = allText.indexOf(end);
 	        String paragraph = allText.substring(sIndex, eIndex);
-	        List<Result> rs = processOnFirstParagraph(paragraph);
+	        List<Result> rs = null;
+            try {
+                rs = processOnFirstParagraph(paragraph);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 	        returnObj.setFirstPart(rs);
         }
         {
@@ -88,40 +100,58 @@ public class PDFParser {
 	        sIndex = allText.indexOf(start)+start.length();
 	        eIndex = allText.indexOf(end);
 	        String paragraph = allText.substring(sIndex, eIndex);
-	        List<Result> rs = processOnThirdParagraph(paragraph);
+	        List<Result> rs = null;
+            try {
+                rs = processOnThirdParagraph(paragraph);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 	        returnObj.setThirdPart(rs);
         }
         {
 	        String start = "消防设施检测不符合规范要求项目";
-	        String end = "消防设备登记表";
+	        String end = "消防设备登记";
 	        sIndex = allText.indexOf(start)+start.length();
 	        eIndex = allText.indexOf(end);
 	        String paragraph = allText.substring(sIndex, eIndex);
-	        List<ListResult> rs = processOnForthParagraph(paragraph);
+	        List<ListResult> rs = null;
+            try {
+                rs = processOnForthParagraph(paragraph);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 	        returnObj.setForthPart(rs);
         }
         {
-	        String start = "消防设备登记表";
+	        String start = "消防设备登记";
 	        sIndex = allText.indexOf(start)+start.length();
 	        String paragraph = allText.substring(sIndex);
-	        List<ListResult> rs = processOnFifthParagraph(paragraph);
+	        List<ListResult> rs = null;
+            try {
+                rs = processOnFifthParagraph(paragraph);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 	        returnObj.setFifthPart(rs);
         }
         return returnObj;
     }
     private Cover processOnCover(String paragraph){
     	Cover cover = new Cover();
-    	String[] lines = paragraph.split("\n");
+    	String[] lines = paragraph.split("\r\n");
 
-		Pattern projectName = Pattern.compile("^项目名称：\\s*(.*)\\s*$");
-		Pattern projectAddress = Pattern.compile("^项目地址：\\s*(.*)\\s*$");
-		Pattern agentName = Pattern.compile("^委托单位：\\s*(.*)\\s*$");
-		Pattern qaName = Pattern.compile("^检测单位：\\s*(.*)\\s*$");
-		Pattern reportNum = Pattern.compile("^粤消检\\s*(.*)\\s*$");
-		Pattern qaAddress = Pattern.compile("^检测单位地址：\\s*(.*)\\s*$");
-		Pattern contactTel = Pattern.compile("^电　     话：\\s*(.*)\\s*$");
-		Pattern contactFax = Pattern.compile("^传　　   真：\\s*(.*)\\s*$");
-		Pattern contactPostcode = Pattern.compile("^邮　　   编：\\s*(.*)\\s*$");
+		Pattern projectName = Pattern.compile("^项目名称:\\s*(.*)\\s*$");
+		Pattern projectAddress = Pattern.compile("^项目地址:\\s*(.*)\\s*$");
+		Pattern agentName = Pattern.compile("^委托单位:\\s*(.*)\\s*$");
+		Pattern qaName = Pattern.compile("^检测单位:\\s*(.*)\\s*$");
+		Pattern reportNum = Pattern.compile("^天消\\s*(.*)\\s*$");
+		Pattern qaAddress = Pattern.compile("^检测单位地址:\\s*(.*)\\s*$");
+		Pattern contactTel = Pattern.compile("^电\\s+话:\\s*(.*)\\s*$");
+		Pattern contactFax = Pattern.compile("^传\\s+真:\\s*(.*)\\s*$");
+		Pattern contactPostcode = Pattern.compile("^邮\\s+编:\\s*(.*)\\s*$");
 
     	for(int i=0;i<lines.length;i++){
     		String line = lines[i];

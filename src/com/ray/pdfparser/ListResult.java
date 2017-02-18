@@ -6,6 +6,8 @@ public class ListResult {
 	private String label;
 	private List<String> nums;
 	private List<String> strings;
+	private String message;// 错误信息记录
+	
 	public ListResult(String label, List<String> nums, List<String> strings){
 		this.label = label;
 		this.nums = nums;
@@ -27,4 +29,10 @@ public class ListResult {
 	public String toString(){
 		return "{label:'"+this.label+"', num:"+this.nums+", strings: "+this.strings+"}";
 	}
+    public String getMessage() {
+        return message;
+    }
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }
