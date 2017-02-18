@@ -2,18 +2,28 @@ package com.ray.pdfparser;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.print.DocFlavor.STRING;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+
+import com.sun.xml.internal.ws.util.StringUtils;
 
 public class PDFParser {
 
 	static boolean isDebug = false;
 	public static void main(String[] args) throws IOException {
+	    
+	    Pattern pattern =Pattern.compile("正则表达式");
+	    Matcher matcher =pattern.matcher("正则表达式 HelloWorld,正则表达式 Hello World");
+	    //替换第一个符合正则的数据
+	    System.out.println(matcher.matches());
 
 		long startTime = System.currentTimeMillis();
 		File pdfFile = new File("D:/temp/report_temp/report1.pdf");
@@ -38,7 +48,7 @@ public class PDFParser {
         {
         	System.out.println(paragraph);
         	System.out.println("------------------------------------------------------------");
-	        List<Result> rs = processOnThirdParagraph(paragraph);
+	        List<Result> rs = processOnThirdParagraph(paragraph, returnObj);
 	        returnObj.setThirdPart(rs);
         }
         return returnObj;
@@ -102,7 +112,7 @@ public class PDFParser {
 	        String paragraph = allText.substring(sIndex, eIndex);
 	        List<Result> rs = null;
             try {
-                rs = processOnThirdParagraph(paragraph);
+                rs = processOnThirdParagraph(paragraph, returnObj);
             } catch (Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -341,44 +351,129 @@ public class PDFParser {
     	
     	return rs;
     }
-    private List<Result> processOnThirdParagraph(String paragraph){
-    	int position = 1;//1=level,2=data,3=label,
-    	String level = "", label = "", value1 = "", value2 = "";
-		Pattern valuePatt = Pattern.compile(".*(\\d) (\\d)$");
-		Pattern labelPatt = Pattern.compile("^(\\d+\\.\\d+\\.\\d+) .*$");
-    	String[] lines = paragraph.split("\n");
-    	if(isDebug) System.out.println("3rd PARA SIZE="+lines.length);
-    	List<Result> rs = new ArrayList<Result>();
-    	for(int i=0;i<lines.length;i++){
-    		String line = lines[i];
-        	if(isDebug) System.out.println("LINE["+i+"]="+line);
-    		if(line!=null) line = line.trim();
-    		if(position==1){
-    			if("A".equals(line)||"B".equals(line)||"C".equals(line)){
-    				level = line;
-        			if(isDebug) System.out.println("    lv="+level);
-    				position = 2;
-    			}
-    		}else if(position==2){
-    			Matcher m = valuePatt.matcher(line);
-    			if(m.find()){
-    				value1 = m.group(1);
-    				value2 = m.group(2);
-        			if(isDebug) System.out.println("    v1="+value1+", v2="+value2);
-    				position = 3;
-    			}
-    		}else if(position==3){
-    			Matcher m = labelPatt.matcher(line);
-    			if(m.find()){
-    				if(isDebug) prtMacher(m);
-    				label = m.group(1);
-    				position = 1;
-        			Result r = new Result(label, level, value1, value2);
-        			rs.add(r);
-        			if(isDebug) System.out.println("    "+r);
-    			}
-    		}
-    	}
+    /**
+     * 
+     * @param paragraph
+     * @return
+     * @template 
+项目编号 检测项 重要等级 检测标准(规范要求) 检测点数 不合格点数
+6 消防给水(消防水源)
+6.2 消防水池
+6.2.1 消防水池自动补水设施设置 应按设计要求设置，其补水设施应正常(应
+B 设水泵自动启停装置或浮球阀等自动补水设
+施)  1  0
+6.2.2 消防水池有效容积、格数 应符合规范及设计的要求
+B
+ 1  0
+6.2.6 消防用水与其他用水共用水池的技术 应采取确保消防用水量不作他用的技术措施
+措施 B
+ 1  0
+6.2.7 消防水池出水管 应保证消防水池的有效容积能被全部利用
+B
+ 1  0
+6.2.9 消防水池的溢流水管、排水设施 消防水池应设置溢流水管和排水设施，并应
+C 采用间接排水
+ 1  0
+7 消火栓系统
+7.1 消防供水设施
+7.1.1 消防水泵设置及选型 应按设计要求设置，选型应满足消防给水系
+A 统的流量和压力需求
+ 2  0
+7.1.2 消防水泵备用泵的设置 消防水泵应设置备用泵(除建筑高度小
+B 于54m的住宅和室外消防给水设计流
+量≤25L/s的建筑、室内消防给水设计流  1  0
+量≤10L/s的建筑外
+7.1.3 水泵控制柜 消防水泵控制柜在平时应使消防水泵处于自
+B 动启泵状态，应注明所属系统编号的标
+志，按钮、指示灯及仪表应正常  1  0
+广东建筑消防设施检测中心有限公司 2017年1月18日 16GJA153 第 6 页，共 44 页
+天河区开展第三方消防设施检测项目技术咨询报告
+项目编号 检测项 重要等级 检测标准(规范要求) 检测点数 不合格点数
+7.1.4 主备泵的切换 主泵不能正常投入运行时,应自动切换启动
+A 备用泵
+ 2  0
+7.1.5 水泵外观质量及安装质量 泵及电机的外观表面不应有碰损，轴心不应
+C 有偏心；水泵之间及其与墙或其他设备之间
+的间距应满足安装、运行、维护管理要求  2  0
+     */
+    private List<Result> processOnThirdParagraph(String paragraph, PDFParserResult returnObj){
+    	String level = "", label = "", name = "", value1 = "", value2 = "";
+		Pattern valuePatt = Pattern.compile("\\s[\\d]{1,}\\s\\s[\\d]{1,}");
+		
+		List<Result> rs = new ArrayList<Result>();
+		// 匹配换行+数字.组合
+		Pattern linePat = Pattern.compile("\r\n[\\d]{1,}[\\.]{0,}");
+		Matcher lineMatcher = linePat.matcher(paragraph);
+		int start = 0;
+		int end = 1;
+		String tempStr = "";
+		// 获取匹配index，截取字段，分别解析
+		while(lineMatcher.find()){
+		    start = lineMatcher.start();
+		    if(lineMatcher.find()){
+		        end = lineMatcher.start();
+		    }else{
+		        end = paragraph.length()-1;
+		    }
+		    tempStr = paragraph.substring(start,end);
+		    //System.out.println(tempStr);
+		    
+		    if(null !=tempStr && "".equals(tempStr)){
+		        continue;
+		    }
+		    // set label
+		    label = tempStr.substring(0, tempStr.indexOf(" "));
+		    tempStr = tempStr.replace(label, "");
+		    String[] lines = tempStr.split("\r\n");
+		    String line = null;
+		    StringBuffer sb = new StringBuffer();
+		    boolean flag = false;
+		    for(int i=0;i<lines.length;i++){
+		        line = lines[i];
+		        
+		        if(line == null || "".equals(line)){
+		            continue;
+		        }
+		        
+		        // 处理脏数据
+		        if(line.contains("项目编号") || line.contains("天河区开展第三方消防设施检测项目技术咨询报告") || line.contains(returnObj.getCover().getReportNum())){
+		            continue;
+		        }
+		        // set level
+		        flag = false;
+		        if(line.startsWith("A")||line.contains(" A")){
+		           level = "A"; 
+		           flag = true;
+		        }else if(line.startsWith("B")||line.contains(" B")){
+		            level = "B";
+		            flag = true;
+		        }else if(line.startsWith("C")||line.contains(" C")){
+                    level = "C";
+                    flag = true;
+                }
+		        if(flag){
+		            line = line.replace(level, "");
+		            line = line.trim();
+		            sb.append(line);
+		            continue;
+		        }
+		        // set value1,value2
+		        Matcher m = valuePatt.matcher(line);
+                if(m.find()){
+                    value1 = String.valueOf(m.group().replaceAll(" ", "").charAt(0));// 获取第一位数字
+                    value2 = String.valueOf(m.group().replaceAll(" ", "").charAt(1));// 获取第二位数字
+                    line = line.replace(m.group(), "");
+                    line = line.trim();
+                    sb.append(line);
+                    continue;
+                }
+                line = line.trim();
+		        sb.append(line);
+		    }
+		    name = sb.toString();
+		    System.out.println(name);
+		    rs.add(new Result(label, name, level, value1, value2));
+		}
     	return rs;
     }
     private void prtMacher(Matcher m){
