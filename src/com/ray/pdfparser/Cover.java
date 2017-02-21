@@ -11,6 +11,8 @@ public class Cover {
 	private String contactFax = null;
 	private String contactPostcode = null;
 	private String message = null;
+	// 消防结论
+	private String reportConclusion;
 	public String getReportNum() {
 		return reportNum;
 	}
@@ -83,5 +85,11 @@ public class Cover {
     }
     public void setMessage(String message) {
         this.message = message;
+    }
+    public String getReportConclusion() {
+        return reportConclusion;
+    }
+    public void setReportConclusion(String reportConclusion) {
+        this.reportConclusion = reportConclusion;
     }
 }

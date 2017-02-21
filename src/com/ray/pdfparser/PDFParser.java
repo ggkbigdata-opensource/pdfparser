@@ -2,18 +2,13 @@ package com.ray.pdfparser;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.print.DocFlavor.STRING;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
-
-import com.sun.xml.internal.ws.util.StringUtils;
 
 public class PDFParser {
 
@@ -78,6 +73,7 @@ public class PDFParser {
                 e.printStackTrace();
             }
 	        returnObj.setCover(cover);
+	        returnObj.setReportNum(cover.getReportNum());
         	
         }
         {
@@ -101,8 +97,15 @@ public class PDFParser {
 	        sIndex = allText.indexOf(start)+start.length();
 	        eIndex = allText.indexOf(end);
 	        String paragraph = allText.substring(sIndex, eIndex);
-	        String rs = processOnSecondParagraph(paragraph);
+	        String rs = null;
+            try {
+                rs = processOnSecondParagraph(paragraph);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 	        returnObj.setSecondPart(rs);
+	        returnObj.getCover().setReportConclusion(rs);
         }
         {
 	        String start = "检测情况统计表";

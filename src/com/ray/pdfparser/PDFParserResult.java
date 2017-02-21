@@ -4,6 +4,7 @@ import java.util.List;
 
 public class PDFParserResult {
 
+    private String reportNum;
 	private Cover cover = null;
 	private List<Result> firstPart = null;
 	private String secondPart = null;
@@ -58,5 +59,11 @@ public class PDFParserResult {
 		s.append("\n5.{").append(fifthPart==null?-1:fifthPart.size()).append("}>, ").append(this.fifthPart);
 		return s.toString();
 	}
+    public String getReportNum() {
+        return reportNum;
+    }
+    public void setReportNum(String reportNum) {
+        this.reportNum = reportNum;
+    }
 	
 }
