@@ -2,7 +2,7 @@ package com.ray.pdfparser;
 
 public class Result {
 	private String label;
-	private String name;
+    private String name;
 	private String level;
 	private String value1;
 	private String value2;
@@ -20,12 +20,26 @@ public class Result {
 		this.value1 = value1;
 		this.value2 = value2;
 	}
+	public void setLabel(String label) {
+	    this.label = label;
+	}
+	public void setLevel(String level) {
+	    this.level = level;
+	}
+	public void setValue1(String value1) {
+	    this.value1 = value1;
+	}
+	public void setValue2(String value2) {
+	    this.value2 = value2;
+	}
 	public Result(String label, String value1, String value2){
 		this.label = label;
 		this.value1 = value1;
 		this.value2 = value2;
 	}
-	public String getLabel() {
+	public Result() {
+    }
+    public String getLabel() {
 		return label;
 	}
 	public String getValue1() {

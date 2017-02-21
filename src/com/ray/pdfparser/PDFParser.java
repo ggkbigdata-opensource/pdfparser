@@ -505,39 +505,64 @@ C 有偏心；水泵之间及其与墙或其他设备之间
     	return paragraph.substring(0, lastIndex);
     }
     private List<Result> processOnFirstParagraph(String paragraph){
-    	String[] arr = paragraph.split("\n");
-    	if(isDebug) System.out.println("size = "+arr.length);
-    	String regex = "^\\s*(\\d+)\\s+\\S+\\s+([a-zA-Z])\\s+(\\d+)\\s+(\\d+)\\s*$";
-		Pattern pattern = Pattern.compile(regex);
-    	String subRegex = "^\\s*([a-zA-Z])\\s+(\\d+)\\s+(\\d+)\\s*$";
-		Pattern subPattern = Pattern.compile(subRegex);
-    	List<Result> rs = new ArrayList<Result>((arr.length+1)/2);
-    	String preLabel = "";
-    	for(String line: arr){
-    		if(isDebug) System.out.print("LINE:["+line+"]=>");
-    		Matcher matcher = pattern.matcher(line);
-    		if(matcher.find()){
-//    			int max = matcher.groupCount();
-//    			for(int i=1;i<=max;i++){
-//    				System.out.print(i+":"+matcher.group(i)+", ");
-//    			}
-    			Result r = new Result(matcher.group(1)+matcher.group(2), matcher.group(3), matcher.group(4));
-    			rs.add(r);
-    			preLabel = matcher.group(1);
-    			if(isDebug) System.out.print(r);
-    			if(isDebug) System.out.println("\n");
-    		}else{
-        		matcher = subPattern.matcher(line);
-        		if(!matcher.find()){
-        			if(isDebug) System.out.println("NOT Found...\n");
-        			continue;
-        		}
-    			Result r = new Result(preLabel+matcher.group(1), matcher.group(2), matcher.group(3));
-    			rs.add(r);
-    			if(isDebug) System.out.print(r);
-    			if(isDebug) System.out.println("\n");
-    		}
-    	}
+        List<Result> rs = new ArrayList<Result>();
+        Pattern linePat = Pattern.compile("\r\n[\\d]{1,}[\\s]{1}");
+        Matcher lineMatcher = linePat.matcher(paragraph);
+        int start = 0;
+        int end = 1;
+        String tempStr = "";
+        Result result = null;
+        List<String> strs = null;
+        Pattern labelPat = Pattern.compile("\r\n[\\d]{1,}[\\s]{1}");
+        Pattern namePat = Pattern.compile("[A|B|C]{1}[\\s]{2}[\\d]{1,}[\\s]{2}[\\d]{1,}");
+        Matcher tempMatcher = null;
+        String tempValue = "";
+        String label = "";
+        String name = "";
+        // 获取匹配index，截取字段，分别解析
+        while(lineMatcher.find()){
+            strs = new ArrayList<String>();
+            start = lineMatcher.start();
+            if(lineMatcher.find()){
+                end = lineMatcher.start();
+            }else{
+                end = paragraph.length()-1;
+            }
+            tempStr = paragraph.substring(start,end);
+            //System.out.println(tempStr);
+            
+            if(null !=tempStr && "".equals(tempStr)){
+                continue;
+            }
+            // set label
+            tempMatcher = labelPat.matcher(tempStr);
+            while(tempMatcher.find()){
+                tempValue = tempMatcher.group();
+                tempStr.replace(tempValue, "");
+                tempValue.replace("\r\n", "");
+                label = tempValue.trim();
+                tempValue = "";
+            }
+            // set level value1 value2
+            tempMatcher = namePat.matcher(tempStr);
+            while(tempMatcher.find()){
+                tempValue = tempMatcher.group();
+                tempStr.replace(tempValue, "");
+                strs.add(tempValue);
+            }
+            // set name
+            name = tempStr.trim();
+            for(String str:strs){
+                result = new Result();
+                result.setName(name);
+                result.setLabel(label);
+                String[] arr = str.split("\\s\\s");
+                result.setLevel(arr[0]);
+                result.setValue1(arr[1]);
+                result.setValue2(arr[2]);
+                rs.add(result);
+            }
+        }
     	return rs;
     }
 
