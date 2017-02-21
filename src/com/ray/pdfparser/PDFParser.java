@@ -166,17 +166,21 @@ public class PDFParser {
 		Pattern contactFax = Pattern.compile("^传\\s+真:\\s*(.*)\\s*$");
 		Pattern contactPostcode = Pattern.compile("^邮\\s+编:\\s*(.*)\\s*$");
 
+		int projectNameLine = 0;
+		int projectAddrLine = 0;
     	for(int i=0;i<lines.length;i++){
     		String line = lines[i];
     		if(isDebug) System.out.println("LINE=>"+line);
     		Matcher m = projectName.matcher(line);
     		if(m.find()){
     			cover.setProjectName(m.group(1));
+    			projectNameLine = i;
     			continue;
     		}
     		m = projectAddress.matcher(line);
     		if(m.find()){
     			cover.setProjectAddress(m.group(1));
+    			projectAddrLine = i;
     			continue;
     		}
     		m = agentName.matcher(line);
@@ -215,6 +219,15 @@ public class PDFParser {
     			continue;
     		}
     	}
+    	// 修改项目名称
+    	if(projectAddrLine - projectNameLine > 1){
+    	    StringBuffer sb = new StringBuffer(cover.getProjectName());
+    	    for(int j = projectNameLine + 1 ; j < projectAddrLine; j++){
+    	        sb.append(lines[j].trim());
+    	    }
+    	    cover.setProjectName(sb.toString());
+    	}
+    	
     	return cover;
     }
     private List<ListResult> processOnFifthParagraph(String paragraph){
