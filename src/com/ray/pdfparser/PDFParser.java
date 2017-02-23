@@ -312,60 +312,98 @@ public class PDFParser {
     }
     private List<ListResult> processOnForthParagraph(String paragraph){
     	List<ListResult> rs = new ArrayList<ListResult>();
-    	String[] lines = paragraph.split("\n");
-    	String engNum = "";
-    	String label = "";
-    	List<String> strings = new ArrayList<String>();
-		Pattern engpat = Pattern.compile("工程编号\\s*:\\s*(\\d+)");
-		Pattern labpat = Pattern.compile("^(\\d+\\.\\d+\\.\\d+).*$");
-		Pattern chkpat = Pattern.compile("^\\d{10} .*$");
-		Pattern skppat = Pattern.compile("^\\s*第 \\d+ 页\\s*.*$");
-		String checkStr = "以下是不符合规范要求的检测点";
-    	int position = 0;//0=engineering number, 1=label,2=start point, 3=repeat to retrieve data
-
-    	for(int i=0;i<lines.length;i++){
-    		String line = lines[i];
-    		if(isDebug) System.out.println("LINE["+position+"]=>"+line);
-    		{
-    			Matcher m = skppat.matcher(line);
-    			if(m.find()){
-    				continue;
-    			}
-    		}
-    		if(position==0){
-    			Matcher m = engpat.matcher(line);
-    			if(m.find()){
-    				engNum = m.group(1);
-    				position = 1;
-    				if(isDebug) System.out.println("  工程编号=>"+engNum);
-    			}
-    		}else if(position==1){
-    			Matcher m = labpat.matcher(line);
-    			if(m.find()){
-    				label = m.group(1);
-    				position = 2;
-    				if(isDebug) System.out.println("  项目编号=>"+label);
-    			}
-    		}else if(position==2){
-    			if(line.indexOf(checkStr)>=0){
-    				position = 3;
-    			}
-    		}else if(position==3){
-    			Matcher m = chkpat.matcher(line);
-    			if(m.find()){
-    				String string = m.group(0);
-    				strings.add(string);
-    				if(isDebug) System.out.println("  ----->"+string);
-    			}else{
-    				ListResult r = new ListResult(label, strings);
-    				rs.add(r);
-    				position = 1;
-    				strings = new ArrayList<String>();
-    			}
-    		}
-    	}
+    	Pattern reportNumPat = Pattern.compile("工程编号:\\s*(\\d+)");
+    	String reportNum = "";
+    	String[] lineListt = paragraph.split("\r\n");
+    	for(int i=0;i<lineListt.length;i++){
+            String line = lineListt[i];
+            Matcher reportNumMat = reportNumPat.matcher(line);
+            if(reportNumMat.find()){
+                reportNum = line.split(":")[1].trim();
+                break;
+            }
+        }
     	
+    	Pattern jcxPat = Pattern.compile("\r\n检\\s测\\s项:\\s");
+    	Matcher partMat = jcxPat.matcher(paragraph);
+        String tempStr = null;
+        int start = 0,end = 0;
+        if(partMat.find()){
+            start = partMat.start();// 设置第一个部分开始位置
+        }
+        while(partMat.find()){
+            end = partMat.start();
+            tempStr = paragraph.substring(start,end);
+            //System.out.println(tempStr);
+            
+            if(null !=tempStr && "".equals(tempStr)){
+                continue;
+            }
+            rs.add(this.parseFourthPart(tempStr, reportNum));
+            start = end;
+        }
+        tempStr = paragraph.substring(start,paragraph.length()-1);
+        rs.add(this.parseFourthPart(tempStr, reportNum));
     	return rs;
+    }
+    
+    /**
+     * 检 测 项: 7.1.14(消火栓系统、消防供水设施、水泵故障信号反馈)
+            重要等级: B
+            规范要求: 水泵发生故障时,应有信号反馈回消防控制室
+            以下是不符合规范要求的检测点：
+      00000D2101 地下室2层、第101号检测点 (1#)
+      00000D2102 地下室2层、第102号检测点 (2#)
+     * @param src
+     * @param reportNum
+     * @return
+     */
+    private ListResult parseFourthPart(String src, String reportNum){
+        String[] lines = src.split("\r\n");
+        String line = null;
+        String testItem = null;
+        String importantGrade = null;
+        String requirements = null;
+        List<String> nonstandardItems = new ArrayList<String>();
+        
+        int position = 0;
+        for(int i=0;i<lines.length;i++){
+            line = lines[i];
+            if(null == line || "".equals(line) || line.contains(reportNum) || line.contains("天河区开展第三方消防设施检测项目技术咨询报告")){
+                continue;
+            }
+            
+            if(position == 0){
+                if(line.contains("检 测 项:")){
+                    testItem = line.split(":")[1].trim();
+                    position = 1;
+                }
+            }else if(position == 1){
+                if(line.contains("重要等级:")){
+                    importantGrade = line.split(":")[1].trim();
+                    position = 2;
+                }else{
+                    testItem += line.trim();
+                }
+            }else if(position == 2){
+                if(line.contains("规范要求:")){
+                    requirements = line.split(":")[1].trim();
+                    position = 3;
+                }else{
+                    importantGrade += line.trim();
+                }
+            }else if(position == 3){
+                if(line.contains("以下是不符合规范要求的检测点")){
+                    position = 4;
+                }else{
+                    requirements += line.trim();
+                }
+            }else if(position == 4){
+                nonstandardItems.add(line);
+            }
+        }
+        
+        return new ListResult(reportNum, testItem, importantGrade, requirements, nonstandardItems);
     }
     /**
      * 
@@ -413,9 +451,6 @@ C 有偏心；水泵之间及其与墙或其他设备之间
 的间距应满足安装、运行、维护管理要求  2  0
      */
     private List<Result> processOnThirdParagraph(String paragraph, PDFParserResult returnObj){
-    	String level = "", label = "", name = "", value1 = "", value2 = "";
-		Pattern valuePatt = Pattern.compile("\\s[\\d]{1,}\\s\\s[\\d]{1,}");
-		
 		List<Result> rs = new ArrayList<Result>();
 		// 匹配换行+数字.组合
 		Pattern linePat = Pattern.compile("\r\n[\\d]{1,}[\\.]{0,}");
@@ -424,73 +459,89 @@ C 有偏心；水泵之间及其与墙或其他设备之间
 		int end = 1;
 		String tempStr = "";
 		// 获取匹配index，截取字段，分别解析
+		if(lineMatcher.find()){
+		    start = lineMatcher.start();  
+		}
 		while(lineMatcher.find()){
-		    start = lineMatcher.start();
-		    if(lineMatcher.find()){
-		        end = lineMatcher.start();
-		    }else{
-		        end = paragraph.length()-1;
-		    }
+		    end = lineMatcher.start();
 		    tempStr = paragraph.substring(start,end);
 		    //System.out.println(tempStr);
 		    
 		    if(null !=tempStr && "".equals(tempStr)){
 		        continue;
 		    }
-		    // set label
-		    label = tempStr.substring(0, tempStr.indexOf(" "));
-		    tempStr = tempStr.replace(label, "");
-		    String[] lines = tempStr.split("\r\n");
-		    String line = null;
-		    StringBuffer sb = new StringBuffer();
-		    boolean flag = false;
-		    for(int i=0;i<lines.length;i++){
-		        line = lines[i];
-		        
-		        if(line == null || "".equals(line)){
-		            continue;
-		        }
-		        
-		        // 处理脏数据
-		        if(line.contains("项目编号") || line.contains("天河区开展第三方消防设施检测项目技术咨询报告") || line.contains(returnObj.getCover().getReportNum())){
-		            continue;
-		        }
-		        // set level
-		        flag = false;
-		        if(line.startsWith("A")||line.contains(" A")){
-		           level = "A"; 
-		           flag = true;
-		        }else if(line.startsWith("B")||line.contains(" B")){
-		            level = "B";
-		            flag = true;
-		        }else if(line.startsWith("C")||line.contains(" C")){
-                    level = "C";
-                    flag = true;
-                }
-		        if(flag){
-		            line = line.replace(level, "");
-		            line = line.trim();
-		            sb.append(line);
-		            continue;
-		        }
-		        // set value1,value2
-		        Matcher m = valuePatt.matcher(line);
-                if(m.find()){
-                    value1 = String.valueOf(m.group().replaceAll(" ", "").charAt(0));// 获取第一位数字
-                    value2 = String.valueOf(m.group().replaceAll(" ", "").charAt(1));// 获取第二位数字
-                    line = line.replace(m.group(), "");
-                    line = line.trim();
-                    sb.append(line);
-                    continue;
-                }
-                line = line.trim();
-		        sb.append(line);
-		    }
-		    name = sb.toString();
-		    System.out.println(name);
-		    rs.add(new Result(label, name, level, value1, value2));
+		    rs.add(this.parseThirdPart(tempStr,returnObj.getCover().getReportNum()));
+		    start = end;
 		}
+		tempStr = paragraph.substring(start,paragraph.length()-1);
+		rs.add(this.parseThirdPart(tempStr,returnObj.getCover().getReportNum()));
     	return rs;
+    }
+    private Result parseThirdPart(String tempStr, String reportNum){
+     // set label
+        String label = tempStr.substring(0, tempStr.indexOf(" "));
+        tempStr = tempStr.replace(label, "");
+        String[] lines = tempStr.split("\r\n");
+        String line = null;
+        String level = null;
+        String value1 = null;
+        String value2 = null;
+        String name = null;
+        StringBuffer sb = new StringBuffer();
+        boolean flag = false;
+        for(int i=0;i<lines.length;i++){
+            line = lines[i];
+            
+            if(line == null || "".equals(line)){
+                continue;
+            }
+            
+            // 处理脏数据
+            if(line.contains("项目编号") || line.contains("天河区开展第三方消防设施检测项目技术咨询报告") || line.contains(reportNum)){
+                continue;
+            }
+            // set level
+            flag = false;
+            if(line.startsWith("A")||line.contains(" A")){
+               level = "A"; 
+               flag = true;
+            }else if(line.startsWith("B")||line.contains(" B")){
+                level = "B";
+                flag = true;
+            }else if(line.startsWith("C")||line.contains(" C")){
+                level = "C";
+                flag = true;
+            }
+            if(flag){
+                line = line.replace(level, "");
+                line = line.trim();
+                sb.append(line);
+                continue;
+            }
+            // set value1,value2
+            Pattern valuePatt = Pattern.compile("\\s[\\d]{1,}\\s\\s[\\d]{1,}");
+            Matcher m = valuePatt.matcher(line);
+            if(m.find()){
+                value1 = String.valueOf(m.group().replaceAll(" ", "").charAt(0));// 获取第一位数字
+                value2 = String.valueOf(m.group().replaceAll(" ", "").charAt(1));// 获取第二位数字
+                line = line.replace(m.group(), "");
+                line = line.trim();
+                sb.append(line);
+                continue;
+            }
+            line = line.trim();
+            sb.append(line);
+        }
+        String desription = sb.toString();
+        String solution = null;
+        if(null!=desription){
+            String[] des = desription.split("\\s");
+            if(null!=des && des.length ==2){
+                name = des[0];
+                solution = des[1];
+            }
+        }
+        return new Result(label, name,solution, level, value1, value2); 
     }
     private void prtMacher(Matcher m){
     	int max = m.groupCount();
