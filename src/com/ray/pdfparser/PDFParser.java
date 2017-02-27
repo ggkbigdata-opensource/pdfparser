@@ -21,7 +21,7 @@ public class PDFParser {
 	    System.out.println(matcher.matches());
 
 		long startTime = System.currentTimeMillis();
-		File pdfFile = new File("D:/temp/report_temp/report1.pdf");
+		File pdfFile = new File("D:/temp/report_temp/report_origin.pdf");
 		//File pdfFile = new File("D:/report_temp/report1.pdf");
 		//File pdfFile = new File("/Users/wanglei/Downloads/检测报告样本_client_import.pdf");
 		PDFParser p = new PDFParser();
@@ -478,6 +478,9 @@ C 有偏心；水泵之间及其与墙或其他设备之间
     	return rs;
     }
     private Result parseThirdPart(String tempStr, String reportNum){
+        if(null == reportNum){
+            reportNum = "none report num";
+        }
      // set label
         String label = tempStr.substring(0, tempStr.indexOf(" "));
         tempStr = tempStr.replace(label, "");
